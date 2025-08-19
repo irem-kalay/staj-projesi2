@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video Özetleme Uygulaması</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/flag-icon-css/6.6.6/css/flag-icons.min.css">
+    <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-container">
+            <a href="#" class="navbar-logo">
+                <i class="fas fa-video"></i>
+                <span data-translate="appName">VideoSummarizer</span>
+            </a>
+
+            <ul class="navbar-menu">
+                <li class="navbar-item"><a href="#" class="navbar-link" data-translate="navHome">Ana Sayfa</a></li>
+                <li class="navbar-item"><a href="#" class="navbar-link" data-translate="navFeatures">Özellikler</a></li>
+                <li class="navbar-item"><a href="#" class="navbar-link" data-translate="navApiDocs">API Dokümantasyonu</a></li>
+                <li class="navbar-item"><a href="#" class="navbar-link" data-translate="navSupport">Destek</a></li>
+                <li class="navbar-item navbar-dropdown">
+                    <div class="dropdown-toggle navbar-link">
+                        <span class="fi fi-tr" id="currentFlag"></span>
+                        <span id="currentLanguage">TR</span>
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                    <div class="dropdown-menu">
+                        <div class="dropdown-item" data-lang="tr">
+                            <span class="fi fi-tr"></span> <span>Türkçe</span>
+                        </div>
+                        <div class="dropdown-item" data-lang="en">
+                            <span class="fi fi-gb"></span> <span>English</span>
+                        </div>
+                    </div>
+                </li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="main-content">
+        <div class="container">
+            <div class="logo-section">
+                <div class="logo"><i class="fas fa-video"></i> <span data-translate="appName">VideoSummarizer</span></div>
+                <div class="subtitle" data-translate="subtitle">Yapay Zeka Destekli Video Özetleme Aracı</div>
+            </div>
+
+            <div class="form-section">
+                <!-- CSV Yükleme -->
+                <div class="form-group">
+                    <label class="form-label"><i class="fas fa-file-csv"></i> <span data-translate="uploadLabel">CSV Dosyası Yükle</span></label>
+                    <div class="file-upload-area" id="fileUploadArea">
+                        <input type="file" class="file-input" id="csvFile" accept=".csv" />
+                        <div class="upload-icon"><i class="fas fa-cloud-upload-alt"></i></div>
+                        <div class="upload-text" data-translate="dragDrop">CSV dosyanızı buraya sürükleyin</div>
+                        <div class="upload-subtext" data-translate="clickSelect">veya dosya seçmek için tıklayın</div>
+                    </div>
+                    <div class="file-info" id="fileInfo">
+                        <i class="fas fa-check-circle"></i>
+                        <span id="fileName"></span> <span data-translate="uploadSuccess">başarıyla yüklendi</span>
+                    </div>
+                </div>
+
+                <!-- AI Model Seçimi -->
+                <div class="form-group">
+                    <label class="form-label"><i class="fas fa-robot"></i> <span data-translate="aiModelLabel">AI Model Seçimi</span></label>
+                    <div class="ai-options">
+                        <div class="ai-option selected" data-ai="mistral">
+                            <input type="radio" name="aiModel" value="mistral" checked>
+                            <div class="ai-option-content">
+                                <i class="fas fa-brain ai-icon"></i> <span class="ai-name">Mistral</span>
+                            </div>
+                        </div>
+                        <div class="ai-option" data-ai="gpt">
+                            <input type="radio" name="aiModel" value="gpt">
+                            <div class="ai-option-content">
+                                <i class="fas fa-lightbulb ai-icon"></i> <span class="ai-name">GPT-4</span>
+                            </div>
+                        </div>
+                        <div class="ai-option" data-ai="deepseek">
+                            <input type="radio" name="aiModel" value="deepseek">
+                            <div class="ai-option-content">
+                                <i class="fas fa-rocket ai-icon"></i> <span class="ai-name">Deepseek</span>
+                            </div>
+                        </div>
+                        <div class="ai-option" data-ai="gemini">
+                            <input type="radio" name="aiModel" value="gemini">
+                            <div class="ai-option-content">
+                                <i class="fas fa-gem ai-icon"></i> <span class="ai-name">Gemini</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- İşlemi Başlat -->
+                <button class="process-btn" id="processBtn">
+                    <i class="fas fa-play"></i> <span data-translate="startProcess">Özetle</span>
+                </button>
+
+                <div class="progress-section" id="progressSection" style="display:none;">
+                    <div class="status-text" id="statusText" data-translate="starting">İşlem başlatılıyor...</div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill"></div>
+                    </div>
+                </div>
+
+                <!-- Transkriptleri Göster -->
+                <button id="showTranscriptsBtn" class="process-btn" style="margin-top:15px; background-color:#4CAF50;">
+                    <i class="fas fa-file-alt"></i> <span data-translate="showTranscripts">Transkriptleri Göster/İndir</span>
+                </button>
+
+                <!-- Transkript Kutusu -->
+                <div id="transcriptBox"></div>
+
+                <!-- Sonuçlar -->
+                <div id="resultsContainer" class="results-container" style="margin-top:20px;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- FOOTER -->
+    <footer class="footer">
+        <div class="footer-container">
+            <div class="footer-section">
+                <h3><i class="fas fa-video"></i> <span data-translate="footerAbout">VideoSummarizer Hakkında</span></h3>
+                <p data-translate="footerDescription">
+                    Gelişmiş yapay zeka teknolojileri ile videolarınızı anında özetleyen, modern ve kullanıcı dostu platformumuz.
+                </p>
+                <div class="social-links">
+                    <a href="#" aria-label="Twitter"><i class="fab fa-twitter"></i></a>
+                    <a href="#" aria-label="Facebook"><i class="fab fa-facebook-f"></i></a>
+                    <a href="#" aria-label="LinkedIn"><i class="fab fa-linkedin-in"></i></a>
+                    <a href="#" aria-label="GitHub"><i class="fab fa-github"></i></a>
+                </div>
+            </div>
+
+            <div class="footer-section">
+                <h3><i class="fas fa-link"></i> <span data-translate="footerQuickLinks">Hızlı Bağlantılar</span></h3>
+                <ul class="footer-links">
+                    <li><a href="#" data-translate="footerHome"><i class="fas fa-home"></i> Ana Sayfa</a></li>
+                    <li><a href="#" data-translate="footerFeatures"><i class="fas fa-star"></i> Özellikler</a></li>
+                    <li><a href="#" data-translate="footerPricing"><i class="fas fa-tag"></i> Fiyatlandırma</a></li>
+                    <li><a href="#" data-translate="footerDocs"><i class="fas fa-book"></i> Dokümantasyon</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h3><i class="fas fa-headset"></i> <span data-translate="footerSupport">Destek</span></h3>
+                <ul class="footer-links">
+                    <li><a href="#" data-translate="footerHelp"><i class="fas fa-question-circle"></i> Yardım Merkezi</a></li>
+                    <li><a href="#" data-translate="footerContact"><i class="fas fa-envelope"></i> İletişim</a></li>
+                    <li><a href="#" data-translate="footerFaq"><i class="fas fa-comments"></i> SSS</a></li>
+                    <li><a href="#" data-translate="footerStatus"><i class="fas fa-heartbeat"></i> Sistem Durumu</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h3><i class="fas fa-shield-alt"></i> <span data-translate="footerLegal">Yasal</span></h3>
+                <ul class="footer-links">
+                    <li><a href="#" data-translate="footerPrivacy"><i class="fas fa-user-shield"></i> Gizlilik Politikası</a></li>
+                    <li><a href="#" data-translate="footerTerms"><i class="fas fa-file-contract"></i> Kullanım Koşulları</a></li>
+                    <li><a href="#" data-translate="footerCookies"><i class="fas fa-cookie-bite"></i> Çerez Politikası</a></li>
+                    <li><a href="#" data-translate="footerLicense"><i class="fas fa-certificate"></i> Lisans</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="footer-bottom">
+            <div class="footer-container">
+                <p data-translate="footerCopyright">
+                    © 2025 VideoSummarizer. Tüm hakları saklıdır. <span class="heart">♥</span> ile yapıldı.
+                </p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        const translations = {
+            tr: {
+                appName: "VideoSummarizer",
+                navHome: "Ana Sayfa",
+                navFeatures: "Özellikler",
+                navApiDocs: "API Dokümantasyonu",
+                navSupport: "Destek",
+                subtitle: "Yapay Zeka Destekli Video Özetleme Aracı",
+                uploadLabel: "CSV Dosyası Yükle",
+                dragDrop: "CSV dosyanızı buraya sürükleyin",
+                clickSelect: "veya dosya seçmek için tıklayın",
+                uploadSuccess: "başarıyla yüklendi",
+                aiModelLabel: "AI Model Seçimi",
+                startProcess: "Özetle",
+                starting: "İşlem başlatılıyor...",
+                showTranscripts: "Transkriptleri Göster/İndir",
+                // Footer translations
+                footerAbout: "VideoSummarizer Hakkında",
+                footerDescription: "Gelişmiş yapay zeka teknolojileri ile videolarınızı anında özetleyen, modern ve kullanıcı dostu platformumuz.",
+                footerQuickLinks: "Hızlı Bağlantılar",
+                footerHome: "Ana Sayfa",
+                footerFeatures: "Özellikler",
+                footerPricing: "Fiyatlandırma",
+                footerDocs: "Dokümantasyon",
+                footerSupport: "Destek",
+                footerHelp: "Yardım Merkezi",
+                footerContact: "İletişim",
+                footerFaq: "SSS",
+                footerStatus: "Sistem Durumu",
+                footerLegal: "Yasal",
+                footerPrivacy: "Gizlilik Politikası",
+                footerTerms: "Kullanım Koşulları",
+                footerCookies: "Çerez Politikası",
+                footerLicense: "Lisans",
+                footerCopyright: "© 2025 VideoSummarizer. Tüm hakları saklıdır. ♥ ile yapıldı."
+
+            },
+            en: {
+                appName: "VideoSummarizer",
+                navHome: "Home",
+                navFeatures: "Features",
+                navApiDocs: "API Documentation",
+                navSupport: "Support",
+                subtitle: "AI-Powered Video Summarization Tool",
+                uploadLabel: "Upload CSV File",
+                dragDrop: "Drag your CSV file here",
+                clickSelect: "or click to select a file",
+                uploadSuccess: "uploaded successfully",
+                aiModelLabel: "AI Model Selection",
+                startProcess: "Summarise",
+                starting: "Starting process...",
+                showTranscripts: "Show/Download Transcripts",
+
+                // Footer translations
+                footerAbout: "About VideoSummarizer",
+                footerDescription: "Our modern and user-friendly platform that instantly summarizes your videos with advanced artificial intelligence technologies.",
+                footerQuickLinks: "Quick Links",
+                footerHome: "Home",
+                footerFeatures: "Features",
+                footerPricing: "Pricing",
+                footerDocs: "Documentation",
+                footerSupport: "Support",
+                footerHelp: "Help Center",
+                footerContact: "Contact",
+                footerFaq: "FAQ",
+                footerStatus: "System Status",
+                footerLegal: "Legal",
+                footerPrivacy: "Privacy Policy",
+                footerTerms: "Terms of Service",
+                footerCookies: "Cookie Policy",
+                footerLicense: "License",
+                footerCopyright: "© 2025 VideoSummarizer. All rights reserved. Made with ♥"
+
+            }
+        };
+
+        function setLanguage(lang) {
+            document.querySelectorAll("[data-translate]").forEach(el => {
+                const key = el.getAttribute("data-translate");
+                el.textContent = translations[lang][key];
+            });
+            document.getElementById("currentLanguage").textContent = lang.toUpperCase();
+            document.getElementById("currentFlag").className = `fi fi-${lang === "tr" ? "tr" : "gb"}`;
+        }
+
+        document.querySelectorAll(".dropdown-item").forEach(item => {
+            item.addEventListener("click", () => {
+                const lang = item.getAttribute("data-lang");
+                setLanguage(lang);
+            });
+        });
+
+        // Sayfa yüklenince varsayılan dil
+        setLanguage("tr");
+
+        // --- Mevcut dosya yükleme ve fetch işlemleri ---
+        const fileInput = document.getElementById("csvFile");
+        const fileInfo = document.getElementById("fileInfo");
+        const fileNameSpan = document.getElementById("fileName");
+        const processBtn = document.getElementById("processBtn");
+        const showTranscriptsBtn = document.getElementById("showTranscriptsBtn");
+        const transcriptBox = document.getElementById("transcriptBox");
+        const resultsContainer = document.getElementById("resultsContainer");
+
+        let uploadedFile = null;
+
+        fileInput.addEventListener("change", (e) => {
+            uploadedFile = e.target.files[0];
+            if (uploadedFile) {
+                fileNameSpan.textContent = uploadedFile.name;
+                fileInfo.style.display = "block";
+            }
+        });
+
+// --- BU KODU EKLEYİN ---
+        // AI Model Seçimi için Event Listener
+        const aiOptions = document.querySelectorAll(".ai-option");
+
+        aiOptions.forEach(option => {
+            option.addEventListener("click", () => {
+                // Önce tüm seçeneklerden 'selected' sınıfını kaldır
+                aiOptions.forEach(opt => opt.classList.remove("selected"));
+
+                // Sadece tıklanan seçeneğe 'selected' sınıfını ekle
+                option.classList.add("selected");
+
+                // Tıklanan kutunun içindeki radio butonu bul ve 'checked' yap
+                const radio = option.querySelector('input[type="radio"]');
+                if (radio) {
+                    radio.checked = true;
+                }
+            });
+        });
+
+        // --- EKLEME BİTTİ ---
+//Ai modeli seçerek
+processBtn.addEventListener("click", () => {
+    if (!uploadedFile)
+        return alert(translations[document.getElementById("currentLanguage").textContent.toLowerCase()].uploadLabel);
+
+    const formData = new FormData();
+    formData.append("file", uploadedFile);
+
+    const selectedAI = document.querySelector('input[name="aiModel"]:checked').value;
+    formData.append("aiModel", selectedAI);
+
+    // resultsContainer yerine transcriptBox kullanılacak
+    transcriptBox.innerHTML = "Özetler yükleniyor...";
+    transcriptBox.style.display = "block";
+
+    const fetchWithTimeout = (url, options, timeout = 180000) => {
+        return Promise.race([
+            fetch(url, options),
+            new Promise((_, reject) =>
+                setTimeout(() => reject(new Error("Fetch isteği zaman aşımına uğradı")), timeout)
+            )
+        ]);
+    };
+
+    fetchWithTimeout("http://127.0.0.1:5000/process", { method: "POST", body: formData })
+    .then(res => res.json())
+    .then(data => {
+        // Önce kutucuğu temizle ve başlık ekle
+        transcriptBox.innerHTML = "";
+        const infoLine = document.createElement("div");
+        infoLine.textContent = "Özetleri indirmek için butona tıklayın:";
+        infoLine.style.fontWeight = "bold";
+        infoLine.style.marginBottom = "10px";
+        transcriptBox.appendChild(infoLine);
+
+        if (data.status === "ok" && data.results) {
+            data.results.forEach(item => {
+                if (item.error) {
+                    const errorDiv = document.createElement("div");
+                    errorDiv.innerHTML = `<strong>${item.url}</strong><br><span style="color:red;">Hata: ${item.error}</span>`;
+                    transcriptBox.appendChild(errorDiv);
+                } else {
+                    const button = document.createElement("button");
+                    button.textContent = item.url; // Video ID veya URL başlık
+                    button.className = "summary-download-btn";
+
+                    // Buton stilini ekleyelim
+                    button.style.display = "block";
+                    button.style.marginBottom = "8px";
+                    button.style.padding = "8px 12px";
+                    button.style.backgroundColor = "#28a745";
+                    button.style.color = "#fff";
+                    button.style.border = "none";
+                    button.style.borderRadius = "5px";
+                    button.style.cursor = "pointer";
+                    button.style.fontSize = "14px";
+
+                    button.addEventListener("mouseover", () => button.style.backgroundColor = "#218838");
+                    button.addEventListener("mouseout", () => button.style.backgroundColor = "#28a745");
+
+                    button.addEventListener("click", () => {
+                        const blob = new Blob([item.summary || "Yok"], { type: "text/plain;charset=utf-8" });
+                        const link = document.createElement("a");
+                        link.href = URL.createObjectURL(blob);
+                        const fileName = item.url.replace(/[^a-z0-9]/gi, "_").substring(0,50) + "_summary.txt";
+                        link.download = fileName;
+                        link.click();
+                        URL.revokeObjectURL(link.href);
+                    });
+
+                    transcriptBox.appendChild(button);
+                }
+            });
+        } else {
+            transcriptBox.innerHTML += "Hata: " + (data.error || "Bilinmeyen hata");
+        }
+    })
+    .catch(err => {
+        transcriptBox.innerHTML = "İstek hatası: " + err.message;
+        console.error("Fetch hatası:", err);
+    });
+});
+
+
+
+showTranscriptsBtn.addEventListener("click", () => {
+    if (!uploadedFile)
+        return alert(translations[document.getElementById("currentLanguage").textContent.toLowerCase()].uploadLabel);
+
+    const formData = new FormData();
+    formData.append("file", uploadedFile);
+
+    transcriptBox.innerHTML = "Transkriptler yükleniyor...";
+    transcriptBox.style.display = "block";
+
+    const fetchWithTimeout = (url, options, timeout = 180000) => {
+        return Promise.race([
+            fetch(url, options),
+            new Promise((_, reject) =>
+                setTimeout(() => reject(new Error("Fetch isteği zaman aşımına uğradı")), timeout)
+            )
+        ]);
+    };
+
+    fetchWithTimeout("http://127.0.0.1:5000/transcripts", { method: "POST", body: formData })
+        .then(res => res.json())
+        .then(data => {
+            transcriptBox.innerHTML = "";
+
+            // Açıklama satırı ekle
+            const infoLine = document.createElement("div");
+            infoLine.textContent = "Transkripti indirmek için butona tıklayın:";
+            infoLine.style.fontWeight = "bold";
+            infoLine.style.marginBottom = "10px";
+            transcriptBox.appendChild(infoLine);
+
+            if (data.status === "ok" && data.results) {
+                data.results.forEach(item => {
+                    const button = document.createElement("button");
+                    button.textContent = item.url; // Video ID veya URL başlık
+                    button.className = "transcript-download-btn";
+
+                    // Buton stilini JS ile ekleyelim (dilersen CSS’e de taşıyabilirsin)
+                    button.style.display = "block";
+                    button.style.marginBottom = "8px";
+                    button.style.padding = "8px 12px";
+                    button.style.backgroundColor = "#007bff";
+                    button.style.color = "#fff";
+                    button.style.border = "none";
+                    button.style.borderRadius = "5px";
+                    button.style.cursor = "pointer";
+                    button.style.fontSize = "14px";
+
+                    button.addEventListener("mouseover", () => button.style.backgroundColor = "#0056b3");
+                    button.addEventListener("mouseout", () => button.style.backgroundColor = "#007bff");
+
+                    button.addEventListener("click", () => {
+                        const textContent = item.transcript || item.error || "";
+                        const blob = new Blob([textContent], { type: "text/plain" });
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement("a");
+                        a.href = url;
+                        a.download = `${item.url.replace(/[^a-z0-9]/gi, "_")}_transcript.txt`;
+                        a.click();
+                        URL.revokeObjectURL(url);
+                    });
+
+                    transcriptBox.appendChild(button);
+                });
+            } else {
+                transcriptBox.innerHTML += "Hata: " + (data.error || "Bilinmeyen hata");
+            }
+        })
+        .catch(err => {
+            transcriptBox.innerHTML = "İstek hatası: " + err.message;
+            console.error("Fetch hatası:", err);
+        });
+});
+
+
+    </script>
+</body>
+</html>
