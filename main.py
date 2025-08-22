@@ -32,14 +32,14 @@ from youtube_transcript_api import YouTubeTranscriptApi
 #_cli.requests = session
 ytt_api = YouTubeTranscriptApi()
 
-API_KEY = "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"  # kendi anahtarın
+API_KEY = "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"
 
 app = Flask(__name__)
 CORS(app)
 
 #ytt_api = YouTubeTranscriptApi()
 
-# === Yardımcı Fonksiyonlar ===
+#Yardımcı Fonksiyonlar
 def parse_video_url_for_id(url):
     parsed_url = urlparse(url)
     if parsed_url.hostname in ['www.youtube.com', 'youtube.com']:
@@ -62,7 +62,7 @@ def summarize_text_with_ai(text, ai_model="claude"):
     if detected_lang == "tr":
         base_prompt = "Aşağıdaki metni anlamlı bir paragraf olarak özetle:\n\n" + text_clean
     else:
-        base_prompt = "Summarize the following text:\n\n" + text_clean
+        base_prompt = "Summarize the following text in text's language:\n\n" + text_clean
 
     if ai_model == "deepseek":
         headers = {
@@ -79,6 +79,7 @@ def summarize_text_with_ai(text, ai_model="claude"):
             return res.json()["choices"][0]["message"]["content"]
         except Exception as e:
             return f"Hata: {e}"
+
     elif ai_model == "gpt": #frontend'de adı gpt
         headers = {
             "Authorization": f"Bearer {API_KEY}",
@@ -118,6 +119,22 @@ def summarize_text_with_ai(text, ai_model="claude"):
         }
         data = {
             "model": "google/gemini-2.0-flash-exp:free",  # OpenRouterdaki ücretsiz gemini modelinin adıydı
+            "messages": [{"role": "user", "content": base_prompt}]
+        }
+        try:
+            res = requests.post("https://openrouter.ai/api/v1/chat/completions", headers=headers, json=data)
+            res.raise_for_status()
+            return res.json()["choices"][0]["message"]["content"]
+        except Exception as e:
+            return f"Hata: {e}"
+
+    elif ai_model== "gemma":
+        headers = {
+            "Authorization": f"Bearer {API_KEY}",
+            "Content-Type": "application/json"
+        }
+        data = {
+            "model": "google/gemma-3-27b-it:free",  #openrouter gemma free modelin adı
             "messages": [{"role": "user", "content": base_prompt}]
         }
         try:
