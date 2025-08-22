@@ -3,34 +3,33 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 import pandas as pd
 import os
-from youtube_transcript_api import YouTubeTranscriptApi
 from urllib.parse import urlparse, parse_qs
 import re, requests, time
 from langdetect import detect
 import requests
-from youtube_transcript_api import YouTubeTranscriptApi, _cli
+from youtube_transcript_api import YouTubeTranscriptApi
 
 #Engellenen IP'de işe yaramıyor
-proxies = {
-    "http": "http://213.233.178.137:3128",
-    "https": "http://42.119.98.66:16000"
-}
+#proxies = {
+#    "http": "http://213.233.178.137:3128",
+#    "https": "http://42.119.98.66:16000"
+#}
 
-session = requests.Session()
-session.proxies.update(proxies)
+#session = requests.Session()
+#session.proxies.update(proxies)
 
 
 # Proxy kontrolü
-try:
-    res = session.get("https://api.ipify.org?format=json", timeout=5)
-    ip = res.json().get("ip")
-    print(f"Proxy ile bağlanıyor, görünen IP: {ip}")
-except Exception as e:
-    print(f"Proxy çalışmıyor veya erişilemiyor: {e}")
+#try:
+ #   res = session.get("https://api.ipify.org?format=json", timeout=5)
+ #   ip = res.json().get("ip")
+ #   print(f"Proxy ile bağlanıyor, görünen IP: {ip}")
+#except Exception as e:
+ #   print(f"Proxy çalışmıyor veya erişilemiyor: {e}")
 
 
 # monkeypatch YouTubeTranscriptApi içindeki requests oturumunu
-_cli.requests = session
+#_cli.requests = session
 ytt_api = YouTubeTranscriptApi()
 
 API_KEY = "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"  # kendi anahtarın
@@ -195,6 +194,10 @@ def write_transcripts(csv_path):
             print(error_msg)
             results.append({"url": youtube_url, "error": str(e)})
             continue
+        # ✅ Her istekten sonra 30 saniye bekle
+        if idx < len(urls):
+            print("20 saniye bekleniyor...")
+            time.sleep(20)
 
     end_time = time.time()
     print(f"Süre: {end_time - start_time:.2f} saniye")
