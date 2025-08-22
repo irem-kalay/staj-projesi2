@@ -479,20 +479,228 @@
 #bosluk {
     white-space: pre-wrap; /* \n karakterlerini yeni satır olarak gösterir */
 }
-
+/*BURDA BAŞLIYOR*/
+/* TRANSCRIPT BOX İYİLEŞTİRMELERİ */
 #transcriptBox {
     display: none;
-    margin-top: 15px;
-    border: 1px solid #ccc;
-    padding: 10px;
-    background: #f9f9f9;
-    max-height: 150px; /* küçük kutucuk */
-    max-width: 20px
-    overflow-y: auto; /* scroll */
+    margin-top: 20px;
+    border: 1px solid #e0e0e0;
+    border-radius: 12px;
+    padding: 20px;
+    background: linear-gradient(135deg, #f8f9ff 0%, #fff5f5 100%);
+    max-height: 400px; /* Daha büyük alan */
+    overflow-y: auto;
     font-size: 14px;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
 }
 
+#transcriptBox::-webkit-scrollbar {
+    width: 8px;
+}
 
+#transcriptBox::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+}
+
+#transcriptBox::-webkit-scrollbar-thumb {
+    background: linear-gradient(135deg, #e91e63, #ad1457);
+    border-radius: 10px;
+}
+
+#transcriptBox::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(135deg, #ad1457, #e91e63);
+}
+
+/* Transkript listesi başlığı */
+.transcript-header {
+    font-weight: bold;
+    font-size: 16px;
+    color: #333;
+    margin-bottom: 15px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #e0e0e0;
+}
+
+.transcript-header i {
+    color: #e91e63;
+    font-size: 18px;
+}
+
+/* Video öğesi konteyneri */
+.video-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 15px;
+    margin-bottom: 10px;
+    background: white;
+    border-radius: 8px;
+    border: 1px solid #e8e8e8;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.video-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(233, 30, 99, 0.15);
+    border-color: #e91e63;
+}
+
+.video-item:last-child {
+    margin-bottom: 0;
+}
+
+/* Video bilgileri */
+.video-info {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.video-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    background: linear-gradient(135deg, #e91e63, #ad1457);
+    border-radius: 8px;
+    color: white;
+    font-size: 18px;
+}
+
+.video-details h4 {
+    color: #333;
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 4px;
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.video-url {
+    color: #666;
+    font-size: 12px;
+    font-family: monospace;
+    background: #f5f5f5;
+    padding: 2px 6px;
+    border-radius: 4px;
+    max-width: 180px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* İndirme butonları */
+.download-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    min-width: 100px;
+    justify-content: center;
+}
+
+.transcript-download-btn {
+    background: linear-gradient(135deg, #007bff, #0056b3);
+    color: white;
+}
+
+.transcript-download-btn:hover {
+    background: linear-gradient(135deg, #0056b3, #004085);
+    transform: scale(1.05);
+}
+
+.summary-download-btn {
+    background: linear-gradient(135deg, #28a745, #218838);
+    color: white;
+}
+
+.summary-download-btn:hover {
+    background: linear-gradient(135deg, #218838, #1e7e34);
+    transform: scale(1.05);
+}
+
+/* Hata durumu */
+.error-item {
+    padding: 15px;
+    background: #ffe6e6;
+    border: 1px solid #ffcccc;
+    border-radius: 8px;
+    margin-bottom: 10px;
+}
+
+.error-item .error-title {
+    font-weight: 600;
+    color: #cc0000;
+    margin-bottom: 5px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.error-item .error-message {
+    color: #666;
+    font-size: 13px;
+}
+
+/* Yükleme durumu */
+.loading-state {
+    text-align: center;
+    padding: 30px;
+    color: #666;
+}
+
+.loading-state i {
+    font-size: 24px;
+    color: #e91e63;
+    margin-bottom: 10px;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Responsive tasarım */
+@media (max-width: 768px) {
+    .video-item {
+        flex-direction: column;
+        gap: 10px;
+        align-items: stretch;
+    }
+
+    .video-info {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+
+    .video-details h4,
+    .video-url {
+        max-width: 100%;
+    }
+
+    .download-btn {
+        width: 100%;
+    }
+}
+
+/*BURDA BİTİYOR*/
  /* FOOTER STYLES */
         .footer {
             background: rgba(255, 255, 255, 0.95);
@@ -632,4 +840,53 @@
                 justify-content: center;
             }
         }
+
+ /* Progress mesajları için ek CSS */
+.loading-state {
+    text-align: center;
+    padding: 30px;
+    color: #666;
+}
+
+.loading-state i {
+    font-size: 24px;
+    color: #e91e63;
+    margin-bottom: 15px;
+    animation: spin 1s linear infinite;
+}
+
+.loading-state div:first-of-type {
+    font-size: 16px;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 8px;
+}
+
+.progress-details {
+    font-size: 14px;
+    color: #666;
+    font-style: italic;
+    background: rgba(233, 30, 99, 0.1);
+    padding: 8px 15px;
+    border-radius: 20px;
+    display: inline-block;
+    margin-top: 10px;
+    border: 1px solid rgba(233, 30, 99, 0.2);
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Progress mesajları için animasyon */
+.progress-details {
+    animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0% { opacity: 0.7; }
+    50% { opacity: 1; }
+    100% { opacity: 0.7; }
+}
 
