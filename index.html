@@ -17,10 +17,10 @@
             </a>
 
             <ul class="navbar-menu">
-                <li class="navbar-item"><a href="#" class="navbar-link" data-translate="navHome">Ana Sayfa</a></li>
+                <li class="navbar-item"><a href="https://www.enocta.com/" class="navbar-link" data-translate="navHome">Ana Sayfa</a></li>
                 <li class="navbar-item"><a href="#" class="navbar-link" data-translate="navFeatures">Özellikler</a></li>
                 <li class="navbar-item"><a href="#" class="navbar-link" data-translate="navApiDocs">API Dokümantasyonu</a></li>
-                <li class="navbar-item"><a href="#" class="navbar-link" data-translate="navSupport">Destek</a></li>
+                <li class="navbar-item"><a href="https://www.enocta.com/bize-ulasin" class="navbar-link" data-translate="navSupport">Destek</a></li>
                 <li class="navbar-item navbar-dropdown">
                     <div class="dropdown-toggle navbar-link">
                         <span class="fi fi-tr" id="currentFlag"></span>
@@ -139,7 +139,7 @@
             <div class="footer-section">
                 <h3><i class="fas fa-link"></i> <span data-translate="footerQuickLinks">Hızlı Bağlantılar</span></h3>
                 <ul class="footer-links">
-                    <li><a href="#" data-translate="footerHome"><i class="fas fa-home"></i> Ana Sayfa</a></li>
+                    <li><a href="https://www.enocta.com/" data-translate="footerHome"><i class="fas fa-home"></i> Ana Sayfa</a></li>
                     <li><a href="#" data-translate="footerFeatures"><i class="fas fa-star"></i> Özellikler</a></li>
                     <li><a href="#" data-translate="footerPricing"><i class="fas fa-tag"></i> Fiyatlandırma</a></li>
                     <li><a href="#" data-translate="footerDocs"><i class="fas fa-book"></i> Dokümantasyon</a></li>
@@ -150,7 +150,7 @@
                 <h3><i class="fas fa-headset"></i> <span data-translate="footerSupport">Destek</span></h3>
                 <ul class="footer-links">
                     <li><a href="#" data-translate="footerHelp"><i class="fas fa-question-circle"></i> Yardım Merkezi</a></li>
-                    <li><a href="#" data-translate="footerContact"><i class="fas fa-envelope"></i> İletişim</a></li>
+                    <li><a href="https://www.enocta.com/bize-ulasin" data-translate="footerContact"><i class="fas fa-envelope"></i> İletişim</a></li>
                     <li><a href="#" data-translate="footerFaq"><i class="fas fa-comments"></i> SSS</a></li>
                     <li><a href="#" data-translate="footerStatus"><i class="fas fa-heartbeat"></i> Sistem Durumu</a></li>
                 </ul>
@@ -313,6 +313,51 @@
 
         // --- EKLEME BİTTİ ---
 //Ai modeli seçerek
+// Verileri saklamak için global değişkenler
+let transcriptData = [];
+let summaryData = [];
+
+// Progress tracking için WebSocket benzeri polling sistemi
+function startProgressPolling(endpoint, processType) {
+    const pollInterval = 2000; // 2 saniye
+    let pollCount = 0;
+    const maxPolls = 90; // 3 dakika maksimum
+
+    const pollStatus = () => {
+        if (pollCount >= maxPolls) return;
+
+        fetch(`http://127.0.0.1:5000/progress`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.current_video) {
+                    const statusMessage = processType === 'summary'
+                        ? `${data.current_video}. video özeti hazırlanıyor...`
+                        : `${data.current_video}. video transkripti hazırlanıyor...`;
+
+                    updateProgressMessage(statusMessage);
+                }
+
+                if (data.status !== 'completed' && pollCount < maxPolls) {
+                    pollCount++;
+                    setTimeout(pollStatus, pollInterval);
+                }
+            })
+            .catch(() => {
+                // Progress endpoint yoksa varsayılan mesajları kullan
+            });
+    };
+
+    setTimeout(pollStatus, 1000); // 1 saniye sonra başla
+}
+
+function updateProgressMessage(message) {
+    const loadingDiv = document.querySelector('.loading-state div:last-child');
+    if (loadingDiv) {
+        loadingDiv.textContent = message;
+    }
+}
+
+// Özetleme butonu için güncellenmiş kod
 processBtn.addEventListener("click", () => {
     if (!uploadedFile)
         return alert(translations[document.getElementById("currentLanguage").textContent.toLowerCase()].uploadLabel);
@@ -323,9 +368,18 @@ processBtn.addEventListener("click", () => {
     const selectedAI = document.querySelector('input[name="aiModel"]:checked').value;
     formData.append("aiModel", selectedAI);
 
-    // resultsContainer yerine transcriptBox kullanılacak
-    transcriptBox.innerHTML = "Özetler yükleniyor...";
+    // Yükleme durumunu göster
+    transcriptBox.innerHTML = `
+        <div class="loading-state">
+            <i class="fas fa-spinner"></i>
+            <div>Özetleme işlemi başlatılıyor...</div>
+            <div class="progress-details">CSV dosyası işleniyor...</div>
+        </div>
+    `;
     transcriptBox.style.display = "block";
+
+    // Progress tracking başlat
+    startProgressPolling('process', 'summary');
 
     const fetchWithTimeout = (url, options, timeout = 180000) => {
         return Promise.race([
@@ -339,64 +393,101 @@ processBtn.addEventListener("click", () => {
     fetchWithTimeout("http://127.0.0.1:5000/process", { method: "POST", body: formData })
     .then(res => res.json())
     .then(data => {
-        // Önce kutucuğu temizle ve başlık ekle
         transcriptBox.innerHTML = "";
-        const infoLine = document.createElement("div");
-        infoLine.textContent = "Özetleri indirmek için butona tıklayın:";
-        infoLine.style.fontWeight = "bold";
-        infoLine.style.marginBottom = "10px";
-        transcriptBox.appendChild(infoLine);
+
+        // Veriyi global değişkende sakla
+        summaryData = data.results || [];
+
+        // Başlık ekle
+        const headerDiv = document.createElement("div");
+        headerDiv.className = "transcript-header";
+        headerDiv.innerHTML = `
+            <i class="fas fa-file-text"></i>
+            Video Özetleri
+        `;
+        transcriptBox.appendChild(headerDiv);
 
         if (data.status === "ok" && data.results) {
-            data.results.forEach(item => {
+            data.results.forEach((item, index) => {
+                const videoItem = document.createElement("div");
+
                 if (item.error) {
-                    const errorDiv = document.createElement("div");
-                    errorDiv.innerHTML = `<strong>${item.url}</strong><br><span style="color:red;">Hata: ${item.error}</span>`;
-                    transcriptBox.appendChild(errorDiv);
+                    videoItem.className = "error-item";
+                    videoItem.innerHTML = `
+                        <div class="error-title">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            Video ${index + 1}
+                        </div>
+                        <div class="video-url">${item.url}</div>
+                        <div class="error-message">Hata: ${item.error}</div>
+                    `;
                 } else {
-                    const button = document.createElement("button");
-                    button.textContent = item.url; // Video ID veya URL başlık
-                    button.className = "summary-download-btn";
+                    videoItem.className = "video-item";
+                    videoItem.innerHTML = `
+                        <div class="video-info">
+                            <div class="video-icon">
+                                <i class="fas fa-play"></i>
+                            </div>
+                            <div class="video-details">
+                                <h4>Video ${index + 1} - Özet</h4>
+                                <div class="video-url">${item.url}</div>
+                            </div>
+                        </div>
+                        <button class="download-btn summary-download-btn" data-index="${index}">
+                            <i class="fas fa-download"></i>
+                            İndir
+                        </button>
+                    `;
 
-                    // Buton stilini ekleyelim
-                    button.style.display = "block";
-                    button.style.marginBottom = "8px";
-                    button.style.padding = "8px 12px";
-                    button.style.backgroundColor = "#28a745";
-                    button.style.color = "#fff";
-                    button.style.border = "none";
-                    button.style.borderRadius = "5px";
-                    button.style.cursor = "pointer";
-                    button.style.fontSize = "14px";
+                    // İndir butonu event listener
+                    const downloadBtn = videoItem.querySelector('.summary-download-btn');
+                    downloadBtn.addEventListener("click", () => {
+                        const dataIndex = parseInt(downloadBtn.getAttribute('data-index'));
+                        const summary = summaryData[dataIndex].summary || "Özet bulunamadı";
+                        const url = summaryData[dataIndex].url;
 
-                    button.addEventListener("mouseover", () => button.style.backgroundColor = "#218838");
-                    button.addEventListener("mouseout", () => button.style.backgroundColor = "#28a745");
-
-                    button.addEventListener("click", () => {
-                        const blob = new Blob([item.summary || "Yok"], { type: "text/plain;charset=utf-8" });
+                        const blob = new Blob([summary], { type: "text/plain;charset=utf-8" });
                         const link = document.createElement("a");
                         link.href = URL.createObjectURL(blob);
-                        const fileName = item.url.replace(/[^a-z0-9]/gi, "_").substring(0,50) + "_summary.txt";
+                        const fileName = url.replace(/[^a-z0-9]/gi, "_").substring(0,50) + "_summary.txt";
                         link.download = fileName;
+                        document.body.appendChild(link);
                         link.click();
+                        document.body.removeChild(link);
                         URL.revokeObjectURL(link.href);
                     });
-
-                    transcriptBox.appendChild(button);
                 }
+
+                transcriptBox.appendChild(videoItem);
             });
         } else {
-            transcriptBox.innerHTML += "Hata: " + (data.error || "Bilinmeyen hata");
+            const errorDiv = document.createElement("div");
+            errorDiv.className = "error-item";
+            errorDiv.innerHTML = `
+                <div class="error-title">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    İşlem Hatası
+                </div>
+                <div class="error-message">Hata: ${data.error || "Bilinmeyen hata"}</div>
+            `;
+            transcriptBox.appendChild(errorDiv);
         }
     })
     .catch(err => {
-        transcriptBox.innerHTML = "İstek hatası: " + err.message;
+        transcriptBox.innerHTML = `
+            <div class="error-item">
+                <div class="error-title">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    Bağlantı Hatası
+                </div>
+                <div class="error-message">İstek hatası: ${err.message}</div>
+            </div>
+        `;
         console.error("Fetch hatası:", err);
     });
 });
 
-
-
+// Transkript gösterme butonu için güncellenmiş kod
 showTranscriptsBtn.addEventListener("click", () => {
     if (!uploadedFile)
         return alert(translations[document.getElementById("currentLanguage").textContent.toLowerCase()].uploadLabel);
@@ -404,8 +495,18 @@ showTranscriptsBtn.addEventListener("click", () => {
     const formData = new FormData();
     formData.append("file", uploadedFile);
 
-    transcriptBox.innerHTML = "Transkriptler yükleniyor...";
+    // Yükleme durumunu göster
+    transcriptBox.innerHTML = `
+        <div class="loading-state">
+            <i class="fas fa-spinner"></i>
+            <div>Transkript işlemi başlatılıyor...</div>
+            <div class="progress-details">CSV dosyası işleniyor...</div>
+        </div>
+    `;
     transcriptBox.style.display = "block";
+
+    // Progress tracking başlat
+    startProgressPolling('transcripts', 'transcript');
 
     const fetchWithTimeout = (url, options, timeout = 180000) => {
         return Promise.race([
@@ -421,57 +522,97 @@ showTranscriptsBtn.addEventListener("click", () => {
         .then(data => {
             transcriptBox.innerHTML = "";
 
-            // Açıklama satırı ekle
-            const infoLine = document.createElement("div");
-            infoLine.textContent = "Transkripti indirmek için butona tıklayın:";
-            infoLine.style.fontWeight = "bold";
-            infoLine.style.marginBottom = "10px";
-            transcriptBox.appendChild(infoLine);
+            // Veriyi global değişkende sakla
+            transcriptData = data.results || [];
+
+            // Başlık ekle
+            const headerDiv = document.createElement("div");
+            headerDiv.className = "transcript-header";
+            headerDiv.innerHTML = `
+                <i class="fas fa-file-alt"></i>
+                Video Transkriptleri
+            `;
+            transcriptBox.appendChild(headerDiv);
 
             if (data.status === "ok" && data.results) {
-                data.results.forEach(item => {
-                    const button = document.createElement("button");
-                    button.textContent = item.url; // Video ID veya URL başlık
-                    button.className = "transcript-download-btn";
+                data.results.forEach((item, index) => {
+                    const videoItem = document.createElement("div");
 
-                    // Buton stilini JS ile ekleyelim (dilersen CSS’e de taşıyabilirsin)
-                    button.style.display = "block";
-                    button.style.marginBottom = "8px";
-                    button.style.padding = "8px 12px";
-                    button.style.backgroundColor = "#007bff";
-                    button.style.color = "#fff";
-                    button.style.border = "none";
-                    button.style.borderRadius = "5px";
-                    button.style.cursor = "pointer";
-                    button.style.fontSize = "14px";
+                    if (item.error) {
+                        videoItem.className = "error-item";
+                        videoItem.innerHTML = `
+                            <div class="error-title">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                Video ${index + 1}
+                            </div>
+                            <div class="video-url">${item.url}</div>
+                            <div class="error-message">Hata: ${item.error}</div>
+                        `;
+                    } else {
+                        videoItem.className = "video-item";
+                        videoItem.innerHTML = `
+                            <div class="video-info">
+                                <div class="video-icon">
+                                    <i class="fas fa-play"></i>
+                                </div>
+                                <div class="video-details">
+                                    <h4>Video ${index + 1} - Transkript</h4>
+                                    <div class="video-url">${item.url}</div>
+                                </div>
+                            </div>
+                            <button class="download-btn transcript-download-btn" data-index="${index}">
+                                <i class="fas fa-download"></i>
+                                İndir
+                            </button>
+                        `;
 
-                    button.addEventListener("mouseover", () => button.style.backgroundColor = "#0056b3");
-                    button.addEventListener("mouseout", () => button.style.backgroundColor = "#007bff");
+                        // İndir butonu event listener
+                        const downloadBtn = videoItem.querySelector('.transcript-download-btn');
+                        downloadBtn.addEventListener("click", () => {
+                            const dataIndex = parseInt(downloadBtn.getAttribute('data-index'));
+                            const transcript = transcriptData[dataIndex].transcript || transcriptData[dataIndex].error || "Transkript bulunamadı";
+                            const url = transcriptData[dataIndex].url;
 
-                    button.addEventListener("click", () => {
-                        const textContent = item.transcript || item.error || "";
-                        const blob = new Blob([textContent], { type: "text/plain" });
-                        const url = URL.createObjectURL(blob);
-                        const a = document.createElement("a");
-                        a.href = url;
-                        a.download = `${item.url.replace(/[^a-z0-9]/gi, "_")}_transcript.txt`;
-                        a.click();
-                        URL.revokeObjectURL(url);
-                    });
+                            const blob = new Blob([transcript], { type: "text/plain;charset=utf-8" });
+                            const link = document.createElement("a");
+                            link.href = URL.createObjectURL(blob);
+                            const fileName = url.replace(/[^a-z0-9]/gi, "_").substring(0,50) + "_transcript.txt";
+                            link.download = fileName;
+                            document.body.appendChild(link);
+                            link.click();
+                            document.body.removeChild(link);
+                            URL.revokeObjectURL(link.href);
+                        });
+                    }
 
-                    transcriptBox.appendChild(button);
+                    transcriptBox.appendChild(videoItem);
                 });
             } else {
-                transcriptBox.innerHTML += "Hata: " + (data.error || "Bilinmeyen hata");
+                const errorDiv = document.createElement("div");
+                errorDiv.className = "error-item";
+                errorDiv.innerHTML = `
+                    <div class="error-title">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        İşlem Hatası
+                    </div>
+                    <div class="error-message">Hata: ${data.error || "Bilinmeyen hata"}</div>
+                `;
+                transcriptBox.appendChild(errorDiv);
             }
         })
         .catch(err => {
-            transcriptBox.innerHTML = "İstek hatası: " + err.message;
+            transcriptBox.innerHTML = `
+                <div class="error-item">
+                    <div class="error-title">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        Bağlantı Hatası
+                    </div>
+                    <div class="error-message">İstek hatası: ${err.message}</div>
+                </div>
+            `;
             console.error("Fetch hatası:", err);
         });
 });
-
-
     </script>
 </body>
 </html>
